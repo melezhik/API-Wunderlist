@@ -1,0 +1,469 @@
+# NAME
+
+API::Wunderlist - Perl 5 API wrapper for Wunderlist
+
+[![Build Status](https://travis-ci.org/alnewkirk/API-Wunderlist.png?branch=master)](https://travis-ci.org/alnewkirk/API-Wunderlist)
+
+# VERSION
+
+version 0.03
+
+# SYNOPSIS
+
+    use API::Wunderlist;
+
+    my $wunderlist = API::Wunderlist->new(
+        client_id    => 'CLIENT_ID',
+        access_token => 'ACCESS_TOKEN',
+        identifier   => 'APPLICATION NAME',
+    );
+
+    $wunderlist->debug(1);
+    $wunderlist->fatal(1);
+
+    my $list = $wunderlist->lists('12345');
+    my $results = $list->fetch;
+
+    # after some introspection
+
+    $list->update( ... );
+
+# DESCRIPTION
+
+This distribution provides an object-oriented thin-client library for
+interacting with the Wunderlist ([https://wunderlist.com/](https://wunderlist.com/)) API. For usage and
+documentation information visit [https://developer.wunderlist.com/documentation](https://developer.wunderlist.com/documentation).
+
+# THIN CLIENT
+
+A thin-client library is advantageous as it has complete API coverage and
+can easily adapt to changes in the API with minimal effort. As a thin-client
+library, this module does not map specific HTTP requests to specific routines,
+nor does it provide parameter validation, pagination, or other conventions
+found in typical API client implementations, instead, it simply provides a
+simple and consistent mechanism for dynamically generating HTTP requests.
+Additionally, this module has support for debugging and retrying API calls as
+well as throwing exceptions when 4xx and 5xx server response codes are
+returned.
+
+## Building
+
+    my $list = $wunderlist->lists('12345');
+
+    $list->action; # GET /lists/12345
+    $list->action('head'); # HEAD /lists/12345
+    $list->action('patch'); # PATCH /lists/12345
+
+Building up an HTTP request object is extremely easy, simply call method names
+which correspond to the API's path segments in the resource you wish to execute
+a request against. This module uses autoloading and returns a new instance with
+each method call. The following is the equivalent:
+
+## Chaining
+
+    my $list = $wunderlist->resource('lists', '12345');
+
+    # or
+
+    my $lists = $wunderlist->lists;
+    my $list  = $lists->resource('12345');
+
+    # then
+
+    $list->action('put', %args); # PUT /lists/12345
+
+Because each call returns a new API instance configured with a resource locator
+based on the supplied parameters, reuse and request isolation are made simple,
+i.e., you will only need to configure the client once in your application.
+
+## Fetching
+
+    my $lists = $wunderlist->lists;
+
+    # query-string parameters
+
+    $lists->fetch( query => { ... } );
+
+    # equivalent to
+
+    my $lists = $wunderlist->resource('lists');
+
+    $lists->action( get => ( query => { ... } ) );
+
+This example illustrates how you might fetch an API resource.
+
+## Creating
+
+    my $lists = $wunderlist->lists;
+
+    # content-body parameters
+
+    $lists->create( data => { ... } );
+
+    # query-string parameters
+
+    $lists->create( query => { ... } );
+
+    # equivalent to
+
+    $wunderlist->resource('lists')->action(
+        post => ( query => { ... }, data => { ... } )
+    );
+
+This example illustrates how you might create a new API resource.
+
+## Updating
+
+    my $lists = $wunderlist->lists;
+    my $list  = $lists->resource('12345');
+
+    # content-body parameters
+
+    $list->update( data => { ... } );
+
+    # query-string parameters
+
+    $list->update( query => { ... } );
+
+    # or
+
+    my $list = $wunderlist->lists('12345');
+
+    $list->update(...);
+
+    # equivalent to
+
+    $wunderlist->resource('lists')->action(
+        put => ( query => { ... }, data => { ... } )
+    );
+
+This example illustrates how you might update a new API resource.
+
+## Deleting
+
+    my $lists = $wunderlist->lists;
+    my $list  = $lists->resource('12345');
+
+    # content-body parameters
+
+    $list->delete( data => { ... } );
+
+    # query-string parameters
+
+    $list->delete( query => { ... } );
+
+    # or
+
+    my $list = $wunderlist->lists('12345');
+
+    $list->delete(...);
+
+    # equivalent to
+
+    $wunderlist->resource('lists')->action(
+        delete => ( query => { ... }, data => { ... } )
+    );
+
+This example illustrates how you might delete an API resource.
+
+## Transacting
+
+    my $lists = $wunderlist->resource('lists', '12345');
+
+    my ($results, $transaction) = $lists->action( ... );
+
+    my $request  = $transaction->req;
+    my $response = $transaction->res;
+
+    my $headers;
+
+    $headers = $request->headers;
+    $headers = $response->headers;
+
+    # etc
+
+This example illustrates how you can access the transaction object used
+represent and process the HTTP transaction.
+
+# ATTRIBUTES
+
+## access\_token
+
+    $wunderlist->access_token;
+    $wunderlist->access_token('ACCESS_TOKEN');
+
+The access\_token parameter should be set to an Access-Token associated with your Client-ID.
+
+## client\_id
+
+    $wunderlist->client_id;
+    $wunderlist->client_id('CLIENT_ID');
+
+The client\_id parameter should be set to the Client-ID of your application.
+
+## identifier
+
+    $wunderlist->identifier;
+    $wunderlist->identifier('IDENTIFIER');
+
+The identifier parameter should be set to a string that identifies your app.
+
+## debug
+
+    $wunderlist->debug;
+    $wunderlist->debug(1);
+
+The debug attribute if true prints HTTP requests and responses to standard out.
+
+## fatal
+
+    $wunderlist->fatal;
+    $wunderlist->fatal(1);
+
+The fatal attribute if true promotes 4xx and 5xx server response codes to
+exceptions, a [API::Wunderlist::Exception](https://metacpan.org/pod/API::Wunderlist::Exception) object.
+
+## retries
+
+    $wunderlist->retries;
+    $wunderlist->retries(10);
+
+The retries attribute determines how many times an HTTP request should be
+retried if a 4xx or 5xx response is received. This attribute defaults to 0.
+
+## timeout
+
+    $wunderlist->timeout;
+    $wunderlist->timeout(5);
+
+The timeout attribute determines how long an HTTP connection should be kept
+alive. This attribute defaults to 10.
+
+## url
+
+    $wunderlist->url;
+    $wunderlist->url(Mojo::URL->new('https://a.wunderlist.com'));
+
+The url attribute set the base/pre-configured URL object that will be used in
+all HTTP requests. This attribute expects a [Mojo::URL](https://metacpan.org/pod/Mojo::URL) object.
+
+## user\_agent
+
+    $wunderlist->user_agent;
+    $wunderlist->user_agent(Mojo::UserAgent->new);
+
+The user\_agent attribute set the pre-configured UserAgent object that will be
+used in all HTTP requests. This attribute expects a [Mojo::UserAgent](https://metacpan.org/pod/Mojo::UserAgent) object.
+
+# METHODS
+
+## action
+
+    my $result = $wunderlist->action($verb, %args);
+
+    # e.g.
+
+    $wunderlist->action('head', %args);    # HEAD request
+    $wunderlist->action('options', %args); # OPTIONS request
+    $wunderlist->action('patch', %args);   # PATCH request
+
+The action method issues a request to the API resource represented by the
+object. The first parameter will be used as the HTTP request method. The
+arguments, expected to be a list of key/value pairs, will be included in the
+request if the key is either `data` or `query`.
+
+## create
+
+    my $results = $wunderlist->create(%args);
+
+    # or
+
+    $wunderlist->POST(%args);
+
+The create method issues a `POST` request to the API resource represented by
+the object. The arguments, expected to be a list of key/value pairs, will be
+included in the request if the key is either `data` or `query`.
+
+## delete
+
+    my $results = $wunderlist->delete(%args);
+
+    # or
+
+    $wunderlist->DELETE(%args);
+
+The delete method issues a `DELETE` request to the API resource represented by
+the object. The arguments, expected to be a list of key/value pairs, will be
+included in the request if the key is either `data` or `query`.
+
+## fetch
+
+    my $results = $wunderlist->fetch(%args);
+
+    # or
+
+    $wunderlist->GET(%args);
+
+The fetch method issues a `GET` request to the API resource represented by the
+object. The arguments, expected to be a list of key/value pairs, will be
+included in the request if the key is either `data` or `query`.
+
+## update
+
+    my $results = $wunderlist->update(%args);
+
+    # or
+
+    $wunderlist->PUT(%args);
+
+The update method issues a `PUT` request to the API resource represented by
+the object. The arguments, expected to be a list of key/value pairs, will be
+included in the request if the key is either `data` or `query`.
+
+# RESOURCES
+
+## avatars
+
+    $wunderlist->avatars;
+
+The avatars method returns a new instance representative of the API
+_Avatar_ resource requested. This method accepts a list of path
+segments which will be used in the HTTP request. The following documentation
+can be used to find more information. [https://developer.wunderlist.com/documentation/endpoints/avatar](https://developer.wunderlist.com/documentation/endpoints/avatar).
+
+## file\_previews
+
+    $wunderlist->previews;
+
+The file\_previews method returns a new instance representative of the API
+_Preview_ resource requested. This method accepts a list of path
+segments which will be used in the HTTP request. The following documentation
+can be used to find more information. [https://developer.wunderlist.com/documentation/endpoints/file\_preview](https://developer.wunderlist.com/documentation/endpoints/file_preview).
+
+## files
+
+    $wunderlist->files;
+
+The files method returns a new instance representative of the API
+_File_ resource requested. This method accepts a list of path
+segments which will be used in the HTTP request. The following documentation
+can be used to find more information. [https://developer.wunderlist.com/documentation/endpoints/file](https://developer.wunderlist.com/documentation/endpoints/file).
+
+## folders
+
+    $wunderlist->folders;
+
+The folders method returns a new instance representative of the API
+_Folder_ resource requested. This method accepts a list of path
+segments which will be used in the HTTP request. The following documentation
+can be used to find more information. [https://developer.wunderlist.com/documentation/endpoints/folder](https://developer.wunderlist.com/documentation/endpoints/folder).
+
+## lists
+
+    $wunderlist->lists;
+
+The lists method returns a new instance representative of the API
+_List_ resource requested. This method accepts a list of path
+segments which will be used in the HTTP request. The following documentation
+can be used to find more information. [https://developer.wunderlist.com/documentation/endpoints/list](https://developer.wunderlist.com/documentation/endpoints/list).
+
+## memberships
+
+    $wunderlist->memberships;
+
+The memberships method returns a new instance representative of the API
+_Membership_ resource requested. This method accepts a list of path
+segments which will be used in the HTTP request. The following documentation
+can be used to find more information. [https://developer.wunderlist.com/documentation/endpoints/membership](https://developer.wunderlist.com/documentation/endpoints/membership).
+
+## notes
+
+    $wunderlist->notes;
+
+The notes method returns a new instance representative of the API
+_Note_ resource requested. This method accepts a list of path
+segments which will be used in the HTTP request. The following documentation
+can be used to find more information. [https://developer.wunderlist.com/documentation/endpoints/note](https://developer.wunderlist.com/documentation/endpoints/note).
+
+## positions
+
+    $wunderlist->list_positions;
+
+The positions method returns a new instance representative of the API
+_Positions_ resource requested. This method accepts a list of path
+segments which will be used in the HTTP request. The following documentation
+can be used to find more information. [https://developer.wunderlist.com/documentation/endpoints/positions](https://developer.wunderlist.com/documentation/endpoints/positions).
+
+## reminders
+
+    $wunderlist->reminders;
+
+The reminders method returns a new instance representative of the API
+_Reminder_ resource requested. This method accepts a list of path
+segments which will be used in the HTTP request. The following documentation
+can be used to find more information. [https://developer.wunderlist.com/documentation/endpoints/reminder](https://developer.wunderlist.com/documentation/endpoints/reminder).
+
+## subtasks
+
+    $wunderlist->subtasks;
+
+The subtasks method returns a new instance representative of the API
+_Subtask_ resource requested. This method accepts a list of path
+segments which will be used in the HTTP request. The following documentation
+can be used to find more information. [https://developer.wunderlist.com/documentation/endpoints/subtask](https://developer.wunderlist.com/documentation/endpoints/subtask).
+
+## task\_comments
+
+    $wunderlist->task_comments;
+
+The task\_comments method returns a new instance representative of the API
+_Task Comment_ resource requested. This method accepts a list of path
+segments which will be used in the HTTP request. The following documentation
+can be used to find more information. [https://developer.wunderlist.com/documentation/endpoints/task\_comment](https://developer.wunderlist.com/documentation/endpoints/task_comment).
+
+## tasks
+
+    $wunderlist->tasks;
+
+The tasks method returns a new instance representative of the API
+_Task_ resource requested. This method accepts a list of path
+segments which will be used in the HTTP request. The following documentation
+can be used to find more information. [https://developer.wunderlist.com/documentation/endpoints/task](https://developer.wunderlist.com/documentation/endpoints/task).
+
+## uploads
+
+    $wunderlist->uploads;
+
+The uploads method returns a new instance representative of the API
+_Upload_ resource requested. This method accepts a list of path
+segments which will be used in the HTTP request. The following documentation
+can be used to find more information. [https://developer.wunderlist.com/documentation/endpoints/upload](https://developer.wunderlist.com/documentation/endpoints/upload).
+
+## users
+
+    $wunderlist->users;
+
+The users method returns a new instance representative of the API
+_User_ resource requested. This method accepts a list of path
+segments which will be used in the HTTP request. The following documentation
+can be used to find more information. [https://developer.wunderlist.com/documentation/endpoints/user](https://developer.wunderlist.com/documentation/endpoints/user).
+
+## webhooks
+
+    $wunderlist->webhooks;
+
+The webhooks method returns a new instance representative of the API
+_Webhooks_ resource requested. This method accepts a list of path
+segments which will be used in the HTTP request. The following documentation
+can be used to find more information. [https://developer.wunderlist.com/documentation/endpoints/webhooks](https://developer.wunderlist.com/documentation/endpoints/webhooks).
+
+# AUTHOR
+
+Al Newkirk <anewkirk@ana.io>
+
+# COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2014 by Al Newkirk.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
