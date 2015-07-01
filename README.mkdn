@@ -6,7 +6,7 @@ API::Wunderlist - Perl 5 API wrapper for Wunderlist
 
 # VERSION
 
-version 0.03
+version 0.04
 
 # SYNOPSIS
 
