@@ -1,6 +1,7 @@
 Changelog for API-Wunderlist
 
-0.03 2015-07-01T15:36:46
+0.03 2015-07-01T15:55:07
+ - Refactored dependencies.
  - Initial commit.
 
 0.02 2015-05-22T12:57:54
