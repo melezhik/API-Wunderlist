@@ -2,7 +2,7 @@
 
 API::Wunderlist - Perl 5 API wrapper for Wunderlist
 
-[![Build Status](https://travis-ci.org/alnewkirk/API-Wunderlist.png?branch=master)](https://travis-ci.org/alnewkirk/API-Wunderlist)
+[![Build Status](https://travis-ci.org/AccessAbundant/API-Wunderlist.png?branch=master)](https://travis-ci.org/AccessAbundant/API-Wunderlist)
 
 # VERSION
 
