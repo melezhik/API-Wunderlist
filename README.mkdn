@@ -1,8 +1,8 @@
 # NAME
 
-API::Wunderlist - Perl 5 API wrapper for Wunderlist
+API::Wunderlist - Wunderlist.com API Client
 
-[![Build Status](https://travis-ci.org/AccessAbundant/API-Wunderlist.png?branch=master)](https://travis-ci.org/AccessAbundant/API-Wunderlist)
+[![Build Status](https://travis-ci.org/alnewkirk/API-Wunderlist.png?branch=master)](https://travis-ci.org/alnewkirk/API-Wunderlist)
 
 # VERSION
 
@@ -33,157 +33,9 @@ version 0.04
 This distribution provides an object-oriented thin-client library for
 interacting with the Wunderlist ([https://wunderlist.com/](https://wunderlist.com/)) API. For usage and
 documentation information visit [https://developer.wunderlist.com/documentation](https://developer.wunderlist.com/documentation).
-
-# THIN CLIENT
-
-A thin-client library is advantageous as it has complete API coverage and
-can easily adapt to changes in the API with minimal effort. As a thin-client
-library, this module does not map specific HTTP requests to specific routines,
-nor does it provide parameter validation, pagination, or other conventions
-found in typical API client implementations, instead, it simply provides a
-simple and consistent mechanism for dynamically generating HTTP requests.
-Additionally, this module has support for debugging and retrying API calls as
-well as throwing exceptions when 4xx and 5xx server response codes are
-returned.
-
-## Building
-
-    my $list = $wunderlist->lists('12345');
-
-    $list->action; # GET /lists/12345
-    $list->action('head'); # HEAD /lists/12345
-    $list->action('patch'); # PATCH /lists/12345
-
-Building up an HTTP request object is extremely easy, simply call method names
-which correspond to the API's path segments in the resource you wish to execute
-a request against. This module uses autoloading and returns a new instance with
-each method call. The following is the equivalent:
-
-## Chaining
-
-    my $list = $wunderlist->resource('lists', '12345');
-
-    # or
-
-    my $lists = $wunderlist->lists;
-    my $list  = $lists->resource('12345');
-
-    # then
-
-    $list->action('put', %args); # PUT /lists/12345
-
-Because each call returns a new API instance configured with a resource locator
-based on the supplied parameters, reuse and request isolation are made simple,
-i.e., you will only need to configure the client once in your application.
-
-## Fetching
-
-    my $lists = $wunderlist->lists;
-
-    # query-string parameters
-
-    $lists->fetch( query => { ... } );
-
-    # equivalent to
-
-    my $lists = $wunderlist->resource('lists');
-
-    $lists->action( get => ( query => { ... } ) );
-
-This example illustrates how you might fetch an API resource.
-
-## Creating
-
-    my $lists = $wunderlist->lists;
-
-    # content-body parameters
-
-    $lists->create( data => { ... } );
-
-    # query-string parameters
-
-    $lists->create( query => { ... } );
-
-    # equivalent to
-
-    $wunderlist->resource('lists')->action(
-        post => ( query => { ... }, data => { ... } )
-    );
-
-This example illustrates how you might create a new API resource.
-
-## Updating
-
-    my $lists = $wunderlist->lists;
-    my $list  = $lists->resource('12345');
-
-    # content-body parameters
-
-    $list->update( data => { ... } );
-
-    # query-string parameters
-
-    $list->update( query => { ... } );
-
-    # or
-
-    my $list = $wunderlist->lists('12345');
-
-    $list->update(...);
-
-    # equivalent to
-
-    $wunderlist->resource('lists')->action(
-        put => ( query => { ... }, data => { ... } )
-    );
-
-This example illustrates how you might update a new API resource.
-
-## Deleting
-
-    my $lists = $wunderlist->lists;
-    my $list  = $lists->resource('12345');
-
-    # content-body parameters
-
-    $list->delete( data => { ... } );
-
-    # query-string parameters
-
-    $list->delete( query => { ... } );
-
-    # or
-
-    my $list = $wunderlist->lists('12345');
-
-    $list->delete(...);
-
-    # equivalent to
-
-    $wunderlist->resource('lists')->action(
-        delete => ( query => { ... }, data => { ... } )
-    );
-
-This example illustrates how you might delete an API resource.
-
-## Transacting
-
-    my $lists = $wunderlist->resource('lists', '12345');
-
-    my ($results, $transaction) = $lists->action( ... );
-
-    my $request  = $transaction->req;
-    my $response = $transaction->res;
-
-    my $headers;
-
-    $headers = $request->headers;
-    $headers = $response->headers;
-
-    # etc
-
-This example illustrates how you can access the transaction object used
-represent and process the HTTP transaction.
+API::Wunderlist is derived from [API::Client](https://metacpan.org/pod/API::Client) and inherits all of it's
+functionality. Please read the documentation for API::Client for more usage
+information.
 
 # ATTRIBUTES
 
@@ -192,21 +44,22 @@ represent and process the HTTP transaction.
     $wunderlist->access_token;
     $wunderlist->access_token('ACCESS_TOKEN');
 
-The access\_token parameter should be set to an Access-Token associated with your Client-ID.
+The access\_token attribute should be set to an Access-Token associated with
+your Client-ID.
 
 ## client\_id
 
     $wunderlist->client_id;
     $wunderlist->client_id('CLIENT_ID');
 
-The client\_id parameter should be set to the Client-ID of your application.
+The client\_id attribute should be set to the Client-ID of your application.
 
 ## identifier
 
     $wunderlist->identifier;
     $wunderlist->identifier('IDENTIFIER');
 
-The identifier parameter should be set to a string that identifies your app.
+The identifier attribute should be set to a string that identifies your app.
 
 ## debug
 
