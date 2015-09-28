@@ -1,49 +1,40 @@
-# ABSTRACT: Perl 5 API wrapper for Wunderlist
+# ABSTRACT: Wunderlist.com API Client
 package API::Wunderlist;
 
-use API::Wunderlist::Class;
+use namespace::autoclean -except => 'has';
 
-extends 'API::Wunderlist::Client';
+use Data::Object::Class;
+use Data::Object::Class::Syntax;
+use Data::Object::Signatures;
 
-use Carp ();
-use Scalar::Util ();
+use Data::Object qw(load);
+use Data::Object::Library qw(Str);
+
+extends 'API::Client';
 
 # VERSION
 
-has identifier => (
-    is       => 'rw',
-    isa      => Str,
-    default  => 'API::Wunderlist (Perl)',
-);
+our $DEFAULT_URL = "https://a.wunderlist.com";
 
-has client_id => (
-    is       => 'rw',
-    isa      => Str,
-    required => 1,
-);
+# ATTRIBUTES
 
-has access_token => (
-    is       => 'rw',
-    isa      => Str,
-    required => 1,
-);
+has client_id    => rw;
+has access_token => rw;
 
-has version => (
-    is       => 'rw',
-    isa      => Int,
-    default  => 1,
-);
+# CONSTRAINTS
 
-method AUTOLOAD () {
-    my ($package, $method) = our $AUTOLOAD =~ /^(.+)::(.+)$/;
-    Carp::croak "Undefined subroutine &${package}::$method called"
-        unless Scalar::Util::blessed $self && $self->isa(__PACKAGE__);
+req client_id    => Str;
+req access_token => Str;
 
-    # return new resource instance dynamically
-    return $self->resource($method, @_);
-}
+# DEFAULTS
 
-method BUILD () {
+def identifier => 'API::Wunderlist (Perl)';
+def url        => method { load('Mojo::URL')->new($DEFAULT_URL) };
+def version    => 1;
+
+# CONSTRUCTION
+
+after BUILD => method {
     my $identifier   = $self->identifier;
     my $client_id    = $self->client_id;
     my $access_token = $self->access_token;
@@ -56,7 +47,9 @@ method BUILD () {
     $url->path("/api/v$version");
 
     return $self;
-}
+};
+
+# METHODS
 
 method PREPARE ($ua, $tx, %args) {
     my $headers = $tx->req->headers;
@@ -66,28 +59,6 @@ method PREPARE ($ua, $tx, %args) {
     $headers->header('X-Client-ID' => $self->client_id);
     $headers->header('X-Access-Token' => $self->access_token);
     $headers->header('Content-Type' => 'application/json');
-}
-
-method action ($method, %args) {
-    $method = uc($method || 'get');
-
-    # execute transaction and return response
-    return $self->$method(%args);
-}
-
-method create (%args) {
-    # execute transaction and return response
-    return $self->POST(%args);
-}
-
-method delete (%args) {
-    # execute transaction and return response
-    return $self->DELETE(%args);
-}
-
-method fetch (%args) {
-    # execute transaction and return response
-    return $self->GET(%args);
 }
 
 method resource (@segments) {
@@ -112,11 +83,6 @@ method resource (@segments) {
 
     # return resource instance
     return $instance;
-}
-
-method update (%args) {
-    # execute transaction and return response
-    return $self->PUT(%args);
 }
 
 1;
@@ -148,163 +114,9 @@ method update (%args) {
 This distribution provides an object-oriented thin-client library for
 interacting with the Wunderlist (L<https://wunderlist.com/>) API. For usage and
 documentation information visit L<https://developer.wunderlist.com/documentation>.
-
-=cut
-
-=head1 THIN CLIENT
-
-A thin-client library is advantageous as it has complete API coverage and
-can easily adapt to changes in the API with minimal effort. As a thin-client
-library, this module does not map specific HTTP requests to specific routines,
-nor does it provide parameter validation, pagination, or other conventions
-found in typical API client implementations, instead, it simply provides a
-simple and consistent mechanism for dynamically generating HTTP requests.
-Additionally, this module has support for debugging and retrying API calls as
-well as throwing exceptions when 4xx and 5xx server response codes are
-returned.
-
-=cut
-
-=head2 Building
-
-    my $list = $wunderlist->lists('12345');
-
-    $list->action; # GET /lists/12345
-    $list->action('head'); # HEAD /lists/12345
-    $list->action('patch'); # PATCH /lists/12345
-
-Building up an HTTP request object is extremely easy, simply call method names
-which correspond to the API's path segments in the resource you wish to execute
-a request against. This module uses autoloading and returns a new instance with
-each method call. The following is the equivalent:
-
-=head2 Chaining
-
-    my $list = $wunderlist->resource('lists', '12345');
-
-    # or
-
-    my $lists = $wunderlist->lists;
-    my $list  = $lists->resource('12345');
-
-    # then
-
-    $list->action('put', %args); # PUT /lists/12345
-
-Because each call returns a new API instance configured with a resource locator
-based on the supplied parameters, reuse and request isolation are made simple,
-i.e., you will only need to configure the client once in your application.
-
-=head2 Fetching
-
-    my $lists = $wunderlist->lists;
-
-    # query-string parameters
-
-    $lists->fetch( query => { ... } );
-
-    # equivalent to
-
-    my $lists = $wunderlist->resource('lists');
-
-    $lists->action( get => ( query => { ... } ) );
-
-This example illustrates how you might fetch an API resource.
-
-=head2 Creating
-
-    my $lists = $wunderlist->lists;
-
-    # content-body parameters
-
-    $lists->create( data => { ... } );
-
-    # query-string parameters
-
-    $lists->create( query => { ... } );
-
-    # equivalent to
-
-    $wunderlist->resource('lists')->action(
-        post => ( query => { ... }, data => { ... } )
-    );
-
-This example illustrates how you might create a new API resource.
-
-=head2 Updating
-
-    my $lists = $wunderlist->lists;
-    my $list  = $lists->resource('12345');
-
-    # content-body parameters
-
-    $list->update( data => { ... } );
-
-    # query-string parameters
-
-    $list->update( query => { ... } );
-
-    # or
-
-    my $list = $wunderlist->lists('12345');
-
-    $list->update(...);
-
-    # equivalent to
-
-    $wunderlist->resource('lists')->action(
-        put => ( query => { ... }, data => { ... } )
-    );
-
-This example illustrates how you might update a new API resource.
-
-=head2 Deleting
-
-    my $lists = $wunderlist->lists;
-    my $list  = $lists->resource('12345');
-
-    # content-body parameters
-
-    $list->delete( data => { ... } );
-
-    # query-string parameters
-
-    $list->delete( query => { ... } );
-
-    # or
-
-    my $list = $wunderlist->lists('12345');
-
-    $list->delete(...);
-
-    # equivalent to
-
-    $wunderlist->resource('lists')->action(
-        delete => ( query => { ... }, data => { ... } )
-    );
-
-This example illustrates how you might delete an API resource.
-
-=cut
-
-=head2 Transacting
-
-    my $lists = $wunderlist->resource('lists', '12345');
-
-    my ($results, $transaction) = $lists->action( ... );
-
-    my $request  = $transaction->req;
-    my $response = $transaction->res;
-
-    my $headers;
-
-    $headers = $request->headers;
-    $headers = $response->headers;
-
-    # etc
-
-This example illustrates how you can access the transaction object used
-represent and process the HTTP transaction.
+API::Wunderlist is derived from L<API::Client> and inherits all of it's
+functionality. Please read the documentation for API::Client for more usage
+information.
 
 =cut
 
@@ -313,7 +125,8 @@ represent and process the HTTP transaction.
     $wunderlist->access_token;
     $wunderlist->access_token('ACCESS_TOKEN');
 
-The access_token parameter should be set to an Access-Token associated with your Client-ID.
+The access_token attribute should be set to an Access-Token associated with
+your Client-ID.
 
 =cut
 
@@ -322,7 +135,7 @@ The access_token parameter should be set to an Access-Token associated with your
     $wunderlist->client_id;
     $wunderlist->client_id('CLIENT_ID');
 
-The client_id parameter should be set to the Client-ID of your application.
+The client_id attribute should be set to the Client-ID of your application.
 
 =cut
 
@@ -331,7 +144,7 @@ The client_id parameter should be set to the Client-ID of your application.
     $wunderlist->identifier;
     $wunderlist->identifier('IDENTIFIER');
 
-The identifier parameter should be set to a string that identifies your app.
+The identifier attribute should be set to a string that identifies your app.
 
 =cut
 
