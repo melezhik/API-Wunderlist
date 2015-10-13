@@ -1,0 +1,3 @@
+ARRAY
+'type' => 'list_position'
+

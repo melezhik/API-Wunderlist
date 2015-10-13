@@ -1,0 +1,4 @@
+ARRAY
+'type' => 'list'
+'list_type' => 'inbox'
+
