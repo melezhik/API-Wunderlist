@@ -1,0 +1,11 @@
+#begin:
+ regexp: created_at : \S+
+ regexp: id : \d+
+ list_type : inbox
+ regexp: owner_id : \d+
+ owner_type : user
+ public : 0
+ revision : 1
+ title : inbox
+ type : list
+#end:
